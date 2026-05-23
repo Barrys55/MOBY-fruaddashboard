@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOBY Fraud Detection Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #c8ff00;
+            --dark: #1a1a1a;
+            --darker: #0d0d0d;
+            --text: #ffffff;
+            --text-secondary: #b3b3b3;
+            --high-risk: #ff4444;
+            --review: #ffaa00;
+            --safe: #00dd77;
+            --card-bg: #2a2a2a;
+            --border: #3a3a3a;
+        }
+
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--dark) 0%, var(--darker) 100%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        * {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-circle {
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            border-radius: 8px;
+        }
+
+        .logo-circle svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .location {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .location strong {
+            color: var(--primary);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .upload-btn {
+            background: var(--primary);
+            color: var(--dark);
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(200, 255, 0, 0.3);
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        /* Monthly Chart Section */
+        .chart-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .chart-section h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-section h2::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .month-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .month-card {
+            background: rgba(200, 255, 0, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .month-card .month-name {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .month-card .rides-count {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .month-card .short-pct {
+            font-size: 14px;
+            color: var(--review);
+        }
+
+        /* Riders Grid Container */
+        #persistentContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Riders Grid */
+        .riders-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 1200px) {
+            .riders-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .riders-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .rider-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .rider-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 8px 24px rgba(200, 255, 0, 0.15);
+        }
+
+        .rider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+        }
+
+        .rider-name {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .rider-id {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .risk-badge {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .risk-badge.high {
+            background: rgba(255, 68, 68, 0.2);
+            color: var(--high-risk);
+            border: 1px solid var(--high-risk);
+        }
+
+        .risk-badge.review {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--review);
+            border: 1px solid var(--review);
+        }
+
+        .risk-badge.historical {
+            background: rgba(255, 170, 0, 0.1);
+            color: var(--review);
+            border: 1px solid rgba(255, 170, 0, 0.5);
+        }
+
+        .rider-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 12px 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stat {
+            font-size: 13px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            font-size: 11px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .rider-reason {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            font-style: italic;
+            margin-bottom: 12px;
+        }
+
+        .rider-contact {
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+        }
+
+        .contact-item {
+            margin: 4px 0;
+            word-break: break-all;
+        }
+
+        .contact-label {
+            color: var(--text-secondary);
+            margin-right: 4px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 48px;
+            background: var(--card-bg);
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            margin-top: 32px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Subsection */
+        .subsection-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 20px 0 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* Pagination */
+        .pagination-container {
+            margin-top: 32px;
+            text-align: center;
+        }
+
+        .pagination-btn {
+            background: var(--card-bg);
+            color: var(--primary);
+            border: 1px solid var(--border);
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.2s;
+            margin: 0 12px;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(200, 255, 0, 0.2);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination-text {
+            color: var(--primary);
+            font-family: 'Poppins', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            display: inline-block;
+            margin: 0 16px;
+        }
+
+        /* Month tabs */
+        .month-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            scroll-behavior: smooth;
+        }
+
+        .month-tabs::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .month-tabs::-webkit-scrollbar-track {
+            background: rgba(200, 255, 0, 0.05);
+            border-radius: 2px;
+        }
+
+        .month-tabs::-webkit-scrollbar-thumb {
+            background: rgba(200, 255, 0, 0.3);
+            border-radius: 2px;
+        }
+
+        .month-tabs::-webkit-scrollbar-thumb:hover {
+            background: rgba(200, 255, 0, 0.5);
+        }
+
+        .month-tab {
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            background: rgba(200, 255, 0, 0.05);
+            color: #b3b3b3;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .month-tab.active {
+            border: 2px solid var(--primary);
+            background: rgba(200, 255, 0, 0.1);
+            color: var(--primary);
+        }
+
+        .month-tab:hover {
+            border-color: var(--primary);
+        }
+
+        /* Rider CTAs */
+        .rider-ctas {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .cta-btn {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid var(--primary);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--primary);
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cta-btn:hover {
+            background: rgba(200, 255, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(200, 255, 0, 0.2);
+        }
+
+        .cta-btn.block {
+            border-color: var(--review);
+            color: var(--review);
+        }
+
+        .cta-btn.block:hover {
+            background: rgba(255, 170, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(255, 170, 0, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .header-right {
+                width: 100%;
+            }
+
+            .riders-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1>
+                    <div class="logo-circle" id="logoContainer">
+                        <!-- Logo -->
+                    </div>
+                    Fraud Detection
+                </h1>
+            </div>
+            <div class="header-right">
+                <div class="location">
+                    📍 <strong>Dublin</strong> | <span id="dataStatus" style="font-size: 12px; color: #b3b3b3;">No data loaded</span>
+                </div>
+                <div class="file-input-wrapper">
+                    <button class="upload-btn" onclick="document.getElementById('csvFile').click()">
+                        Upload CSV
+                    </button>
+                    <input type="file" id="csvFile" accept=".csv" onchange="handleFileUpload(event)" multiple>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1. YTD SUMMARY -->
+        <div class="section">
+            <h2 class="section-title">Year-to-Date Summary (Jan 1 - Today)</h2>
+            <div class="chart-section">
+                <div class="chart-container">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+                <div class="month-summary" id="monthSummary"></div>
+            </div>
+        </div>
+
+        <!-- 2. RECENT FLAGGED USERS -->
+        <div class="section">
+            <h2 class="section-title">Recently Flagged Users</h2>
+            <div id="recentContainer">
+                <div class="empty-state">
+                    <h3>Upload CSV files to analyze</h3>
+                    <p>Recent flagged users will appear here</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. HISTORICAL FLAGGED USERS -->
+        <div class="section">
+            <h2 class="section-title">Historical Flagged Users (Jan 1 - Today)</h2>
+
+            <div id="historicalContainer">
+                <div class="subsection-title">High-Risk Pattern (50%+ Short Rides)</div>
+                <div id="monthTabsContainer"></div>
+                <div class="riders-grid" id="persistentContainer">
+                    <div class="empty-state">
+                        <h3>No data yet</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div>Last updated: <span id="timestamp">—</span></div>
+            <div style="margin-top: 8px;">MOBY Fraud Detection System</div>
+        </div>
+    </div>
+
+    <script>
+        // Logo
+        document.getElementById('logoContainer').innerHTML = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="100" fill="#c8ff00"/>
+            <text x="100" y="130" font-family="Poppins, sans-serif" font-size="80" font-weight="900" text-anchor="middle" fill="#1a1a1a" letter-spacing="-2">O</text>
+        </svg>`;
+
+        const TODAY = new Date('2026-05-23');
+        const YEAR_START = new Date('2026-01-01');
+        const RECENT_DAYS = 7;
+
+        let monthlyData = {};
+        let allUsersData = {}; // user_id -> { name, customerId, email, phone, rides: [{id, date, duration, cost, isShort}], aggregate: {rides, short} }
+        let seenRideIds = new Set(); // Track ride IDs to prevent duplicates
+        let chart = null;
+
+        // Pagination
+        const RECENT_PER_PAGE = 15;
+        const HISTORICAL_PER_PAGE = 30;
+        let recentCurrentPage = 1;
+        let recentTotalPages = 1;
+        let recentFlaggedUsers = [];
+        let historicalHighRiskUsers = [];
+        let historicalByMonth = {}; // month -> users
+        let currentHistoricalMonth = 'January';
+
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            let filesProcessed = 0;
+            let totalRidesLoaded = 0;
+
+            for (let file of files) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        analyzeCSV(e.target.result, file.name);
+                        filesProcessed++;
+                        totalRidesLoaded = Object.values(allUsersData).reduce((sum, u) => sum + u.aggregate.total, 0);
+
+                        if (filesProcessed === files.length) {
+                            updateDashboard();
+                            const uniqueUsers = Object.keys(allUsersData).length;
+                            document.getElementById('dataStatus').innerHTML =
+                                `✓ <strong>${totalRidesLoaded}</strong> rides | <strong>${uniqueUsers}</strong> users`;
+                        }
+                    } catch (error) {
+                        console.error('Error processing', file.name, error);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function analyzeCSV(csv, filename) {
+            const lines = csv.split('\n');
+            const header = lines[0].split(';').map(h => h.trim().replace(/^"/, '').replace(/"$/, ''));
+
+            const rideIdIdx = header.findIndex(h => h.includes('Ride ID') || h.includes('ride_id') || h.includes('ID'));
+            const userIdIdx = header.findIndex(h => h.includes('User ID'));
+            const customerIdIdx = header.findIndex(h => h.includes('Customer ID') || h.includes('customer_id'));
+            const userNameIdx = header.findIndex(h => h.includes('User name'));
+            const emailIdx = header.findIndex(h => h.includes('email'));
+            const phoneIdx = header.findIndex(h => h.includes('phone number'));
+            const durationIdx = header.findIndex(h => h.includes('duration'));
+            const costIdx = header.findIndex(h => h.includes('Total cost'));
+            const dateIdx = header.findIndex(h => h.includes('Start time') || h.includes('Date') || h.includes('date'));
+
+            // Parse rides
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const parts = lines[i].split(';').map(p => p.trim().replace(/^"/, '').replace(/"$/, ''));
+                const userId = parts[userIdIdx];
+                if (!userId) continue;
+
+                // Check for duplicate ride ID
+                const rideId = rideIdIdx >= 0 ? parts[rideIdIdx] : null;
+                if (rideId && seenRideIds.has(rideId)) continue; // Skip duplicate
+                if (rideId) seenRideIds.add(rideId);
+
+                // Parse date
+                let rideDate = null;
+                if (dateIdx >= 0 && parts[dateIdx]) {
+                    rideDate = parseDate(parts[dateIdx]);
+                }
+                if (!rideDate) rideDate = TODAY;
+
+                // Filter: Only Jan 1 - May 23, 2026
+                if (rideDate < YEAR_START || rideDate > TODAY) continue;
+
+                // Initialize user if needed
+                if (!allUsersData[userId]) {
+                    allUsersData[userId] = {
+                        name: parts[userNameIdx] || 'Unknown',
+                        customerId: customerIdIdx >= 0 ? parts[customerIdIdx] : userId,
+                        email: parts[emailIdx] || 'N/A',
+                        phone: parts[phoneIdx] || 'N/A',
+                        rides: [],
+                        aggregate: { total: 0, short: 0 }
+                    };
+                }
+
+                // Parse duration
+                const durationStr = parts[durationIdx] || '0:00';
+                let seconds = 0;
+                const timeParts = durationStr.split(':');
+                if (timeParts.length === 3) {
+                    seconds = parseInt(timeParts[0]) * 3600 + parseInt(timeParts[1]) * 60 + parseInt(timeParts[2]);
+                } else if (timeParts.length === 2) {
+                    seconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+                }
+
+                const isShort = seconds < 180;
+                const cost = parseFloat(parts[costIdx] || 0) || 0;
+
+                // Add ride
+                allUsersData[userId].rides.push({ id: rideId, date: rideDate, duration: seconds, cost, isShort });
+                allUsersData[userId].aggregate.total++;
+                if (isShort) allUsersData[userId].aggregate.short++;
+
+                // Track monthly summary
+                const monthKey = formatMonthKey(rideDate);
+                if (!monthlyData[monthKey]) {
+                    monthlyData[monthKey] = { total: 0, short: 0, date: rideDate };
+                }
+                monthlyData[monthKey].total++;
+                if (isShort) monthlyData[monthKey].short++;
+            }
+        }
+
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            // Try ISO format: 2026-01-15
+            let match = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/);
+            if (match) return new Date(match[1], parseInt(match[2]) - 1, match[3]);
+            // Try other formats: 15/01/2026 or 01/15/2026
+            match = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+            if (match) {
+                let m = parseInt(match[1]), d = parseInt(match[2]), y = parseInt(match[3]);
+                // Guess format: if first is > 12, assume dd/mm/yyyy
+                if (m > 12) return new Date(y, d - 1, m);
+                return new Date(y, m - 1, d);
+            }
+            return null;
+        }
+
+        function formatMonthKey(date) {
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            return months[date.getMonth()] + ' ' + date.getFullYear();
+        }
+
+        function updateDashboard() {
+            // Update monthly summary
+            updateMonthlySummary();
+            updateMonthlyChart();
+
+            // Categorize users
+            const recentFlagged = [];
+            const historicalHighRisk = new Set();
+
+            const recentDate = new Date(TODAY);
+            recentDate.setDate(recentDate.getDate() - RECENT_DAYS);
+
+            for (const userId in allUsersData) {
+                const user = allUsersData[userId];
+
+                // Split rides into recent vs all
+                const recentRides = user.rides.filter(r => r.date >= recentDate && r.date <= TODAY);
+                const recentShort = recentRides.filter(r => r.isShort).length;
+                const recentTotal = recentRides.length;
+
+                // Recent: Flag if >50% short or 25% short with >=3 rides
+                if (recentTotal >= 1) {
+                    const recentPct = Math.round((recentShort / recentTotal) * 1000) / 10;
+                    if (recentPct >= 50 || (recentPct >= 25 && recentTotal >= 3)) {
+                        recentFlagged.push({
+                            ...user,
+                            totalRides: recentTotal,
+                            shortRides: recentShort,
+                            shortPct: recentPct,
+                            avgDuration: Math.round(recentRides.reduce((s, r) => s + r.duration, 0) / recentTotal),
+                            spend: Math.round(recentRides.reduce((s, r) => s + r.cost, 0) * 100) / 100,
+                            risk: recentPct >= 50 ? 'High Risk' : 'Review'
+                        });
+                    }
+                }
+
+                // Historical: Persistent pattern (aggregate 50%+)
+                if (user.aggregate.total >= 3) {
+                    const aggregatePct = Math.round((user.aggregate.short / user.aggregate.total) * 1000) / 10;
+                    if (aggregatePct >= 50) {
+                        historicalHighRisk.add(userId);
+                    }
+                }
+            }
+
+            // Render sections
+            renderRecentFlagged(recentFlagged);
+            renderPersistentHistorical(Array.from(historicalHighRisk));
+
+            document.getElementById('timestamp').textContent = new Date().toLocaleString();
+        }
+
+        function getFilteredMonths() {
+            // Only show Jan - May 2026
+            const filtered = Object.entries(monthlyData).filter(([key]) => {
+                return key.includes('January 2026') || key.includes('February 2026') ||
+                       key.includes('March 2026') || key.includes('April 2026') || key.includes('May 2026');
+            });
+            return filtered.sort((a, b) => a[1].date - b[1].date);
+        }
+
+        function updateMonthlySummary() {
+            const sorted = getFilteredMonths();
+            const html = sorted.map(([month, data]) => {
+                const pct = data.total > 0 ? Math.round((data.short / data.total) * 100 * 10) / 10 : 0;
+                return `
+                    <div class="month-card">
+                        <div class="month-name">${month.replace(' 2026', '')}</div>
+                        <div class="rides-count">${data.total}</div>
+                        <div class="short-pct">${pct}% short</div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('monthSummary').innerHTML = html;
+        }
+
+        function updateMonthlyChart() {
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            const sorted = getFilteredMonths();
+            const labels = sorted.map(([k]) => k.replace(' 2026', ''));
+            const shortRides = sorted.map(([, data]) => data.short);
+            const normalRides = sorted.map(([, data]) => data.total - data.short);
+
+            if (chart) chart.destroy();
+
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Short Rides (<3 min)',
+                            data: shortRides,
+                            backgroundColor: '#ff4444',
+                            borderColor: '#ff4444',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Normal Rides',
+                            data: normalRides,
+                            backgroundColor: 'rgba(200, 255, 0, 0.4)',
+                            borderColor: '#c8ff00',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'x',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true, ticks: { color: '#b3b3b3' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { stacked: true, ticks: { color: '#b3b3b3' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#b3b3b3' }, position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = sorted[context.dataIndex][1].total;
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+                                    return `${label}: ${value} (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderRiderCard(user, cardType = 'recent') {
+            const riskClass = user.risk === 'High Risk' ? 'high' : (cardType === 'recent' ? 'review' : 'historical');
+            const riskLabel = cardType === 'persistent' ? `Persistent Pattern` : (user.risk || 'Historical');
+            const atomUrl = `https://app.atommobility.com/sharing/customers/${user.customerId}`;
+
+            return `
+                <div class="rider-card">
+                    <div class="rider-header">
+                        <div>
+                            <div class="rider-name">${user.name}</div>
+                            <div class="rider-id"><a href="${atomUrl}" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 700;"><strong>${user.customerId}</strong></a></div>
+                        </div>
+                        <div class="risk-badge ${riskClass}">${riskLabel}</div>
+                    </div>
+                    <div class="rider-stats">
+                        <div class="stat">
+                            <div class="stat-label">Rides</div>
+                            <div class="stat-value">${user.totalRides}</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">Short %</div>
+                            <div class="stat-value">${user.shortPct}%</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">Avg Duration</div>
+                            <div class="stat-value">${user.avgDuration}s</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">Spend</div>
+                            <div class="stat-value">€${user.spend}</div>
+                        </div>
+                    </div>
+                    <div class="rider-reason">
+                        <strong>${cardType === 'recent' ? 'Pattern:' : 'Flag:'}</strong> ${user.pattern || `${user.shortPct}% of ${user.totalRides} rides under 3 min`}
+                    </div>
+                    <div class="rider-contact">
+                        <div class="contact-item">📧 ${user.email}</div>
+                        <div class="contact-item">📱 ${user.phone || 'N/A'}</div>
+                    </div>
+                    <div class="rider-ctas">
+                        <a href="${atomUrl}" target="_blank" class="cta-btn">VIEW RIDES</a>
+                        <button class="cta-btn block" onclick="blockUser('${user.customerId}', '${user.name}')">BLOCK USER</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function blockUser(customerId, name) {
+            alert(`Block user ${customerId} (${name}) - Coming soon`);
+        }
+
+        function renderRecentFlagged(users) {
+            const container = document.getElementById('recentContainer');
+            recentFlaggedUsers = users;
+            recentCurrentPage = 1;
+            recentTotalPages = Math.ceil(users.length / RECENT_PER_PAGE);
+
+            if (users.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>✓ No recent issues</h3><p>Riders in the last 7 days are operating normally</p></div>';
+            } else {
+                displayRecentPage();
+            }
+        }
+
+        function displayRecentPage() {
+            const container = document.getElementById('recentContainer');
+            const start = (recentCurrentPage - 1) * RECENT_PER_PAGE;
+            const end = start + RECENT_PER_PAGE;
+            const pageUsers = recentFlaggedUsers.slice(start, end);
+
+            let html = `<div class="riders-grid">${pageUsers.map(u => renderRiderCard(u, 'recent')).join('')}</div>`;
+            html += `<div class="pagination-container">
+                <button class="pagination-btn" onclick="prevRecentPage()" ${recentCurrentPage === 1 ? 'disabled' : ''}>← Previous</button>
+                <span class="pagination-text">Page ${recentCurrentPage} of ${recentTotalPages}</span>
+                <button class="pagination-btn" onclick="nextRecentPage()" ${recentCurrentPage === recentTotalPages ? 'disabled' : ''}>Next →</button>
+            </div>`;
+            container.innerHTML = html;
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function prevRecentPage() {
+            if (recentCurrentPage > 1) {
+                recentCurrentPage--;
+                displayRecentPage();
+            }
+        }
+
+        function nextRecentPage() {
+            if (recentCurrentPage < recentTotalPages) {
+                recentCurrentPage++;
+                displayRecentPage();
+            }
+        }
+
+        function renderPersistentHistorical(userIds) {
+            const container = document.getElementById('persistentContainer');
+            historicalByMonth = { 'January': [], 'February': [], 'March': [], 'April': [], 'May': [] };
+
+            // Group users by month of their rides
+            userIds.forEach(id => {
+                const user = allUsersData[id];
+                const pct = Math.round((user.aggregate.short / user.aggregate.total) * 1000) / 10;
+                const userData = {
+                    ...user,
+                    totalRides: user.aggregate.total,
+                    shortRides: user.aggregate.short,
+                    shortPct: pct,
+                    avgDuration: Math.round(user.rides.reduce((s, r) => s + r.duration, 0) / user.aggregate.total),
+                    spend: Math.round(user.rides.reduce((s, r) => s + r.cost, 0) * 100) / 100,
+                    pattern: `${pct}% short rides YTD (${user.aggregate.total} total rides)`
+                };
+
+                // Add to months where they have rides
+                const months = ['January', 'February', 'March', 'April', 'May'];
+                months.forEach(month => {
+                    const monthStart = new Date(`2026-${months.indexOf(month) + 1}-01`);
+                    const monthEnd = new Date(monthStart);
+                    monthEnd.setMonth(monthEnd.getMonth() + 1);
+                    monthEnd.setDate(0);
+
+                    const monthRides = user.rides.filter(r => r.date >= monthStart && r.date <= monthEnd);
+                    if (monthRides.length > 0) {
+                        historicalByMonth[month].push(userData);
+                    }
+                });
+            });
+
+            currentHistoricalMonth = 'January';
+            displayHistoricalMonthTabs();
+        }
+
+        function displayHistoricalMonthTabs() {
+            const tabsContainer = document.getElementById('monthTabsContainer');
+            const cardsContainer = document.getElementById('persistentContainer');
+
+            // Create month tabs in separate container
+            let tabsHtml = '<div class="month-tabs">';
+            ['January', 'February', 'March', 'April', 'May'].forEach(month => {
+                const isActive = month === currentHistoricalMonth;
+                const count = historicalByMonth[month].length;
+                tabsHtml += `<button class="month-tab ${isActive ? 'active' : ''}" onclick="switchHistoricalMonth('${month}')">${month} (${count})</button>`;
+            });
+            tabsHtml += '</div>';
+            tabsContainer.innerHTML = tabsHtml;
+
+            // Display current month's users with pagination
+            const monthUsers = historicalByMonth[currentHistoricalMonth];
+            const totalPages = Math.ceil(monthUsers.length / HISTORICAL_PER_PAGE);
+            const currentPage = 1;
+            const start = 0;
+            const end = HISTORICAL_PER_PAGE;
+            const pageUsers = monthUsers.slice(start, end);
+
+            let cardsHtml = '';
+            if (monthUsers.length === 0) {
+                cardsHtml = '<div class="empty-state"><h3>No data</h3><p>No high-risk users in ' + currentHistoricalMonth + '</p></div>';
+            } else {
+                cardsHtml = `<div class="riders-grid">${pageUsers.map(u => renderRiderCard(u, 'persistent')).join('')}</div>`;
+                if (totalPages > 1) {
+                    cardsHtml += `<div class="pagination-container">
+                        <button class="pagination-btn" onclick="prevHistoricalSlide('${currentHistoricalMonth}')">← Previous</button>
+                        <span class="pagination-text">Slide 1 of ${totalPages}</span>
+                        <button class="pagination-btn" onclick="nextHistoricalSlide('${currentHistoricalMonth}')">Next →</button>
+                    </div>`;
+                }
+            }
+
+            cardsContainer.innerHTML = cardsHtml;
+            cardsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // Store pagination state
+            if (!window.historicalPagination) window.historicalPagination = {};
+            window.historicalPagination[currentHistoricalMonth] = { currentPage: 1, totalPages };
+        }
+
+        function switchHistoricalMonth(month) {
+            currentHistoricalMonth = month;
+            displayHistoricalMonthTabs();
+        }
+
+        function prevHistoricalSlide(month) {
+            const state = window.historicalPagination[month] || { currentPage: 1 };
+            if (state.currentPage > 1) {
+                state.currentPage--;
+                window.historicalPagination[month] = state;
+                displayHistoricalMonthSlide(month, state.currentPage);
+            }
+        }
+
+        function nextHistoricalSlide(month) {
+            const state = window.historicalPagination[month] || { currentPage: 1 };
+            if (state.currentPage < state.totalPages) {
+                state.currentPage++;
+                window.historicalPagination[month] = state;
+                displayHistoricalMonthSlide(month, state.currentPage);
+            }
+        }
+
+        function displayHistoricalMonthSlide(month, page) {
+            const tabsContainer = document.getElementById('monthTabsContainer');
+            const cardsContainer = document.getElementById('persistentContainer');
+            const monthUsers = historicalByMonth[month];
+            const totalPages = Math.ceil(monthUsers.length / HISTORICAL_PER_PAGE);
+            const start = (page - 1) * HISTORICAL_PER_PAGE;
+            const end = start + HISTORICAL_PER_PAGE;
+            const pageUsers = monthUsers.slice(start, end);
+
+            // Update tabs
+            let tabsHtml = '<div class="month-tabs">';
+            ['January', 'February', 'March', 'April', 'May'].forEach(m => {
+                const isActive = m === month;
+                const count = historicalByMonth[m].length;
+                tabsHtml += `<button class="month-tab ${isActive ? 'active' : ''}" onclick="switchHistoricalMonth('${m}')">${m} (${count})</button>`;
+            });
+            tabsHtml += '</div>';
+            tabsContainer.innerHTML = tabsHtml;
+
+            // Update cards
+            let cardsHtml = `<div class="riders-grid">${pageUsers.map(u => renderRiderCard(u, 'persistent')).join('')}</div>`;
+            cardsHtml += `<div class="pagination-container">
+                <button class="pagination-btn" onclick="prevHistoricalSlide('${month}')" ${page === 1 ? 'disabled' : ''}>← Previous</button>
+                <span class="pagination-text">Slide ${page} of ${totalPages}</span>
+                <button class="pagination-btn" onclick="nextHistoricalSlide('${month}')" ${page === totalPages ? 'disabled' : ''}>Next →</button>
+            </div>`;
+
+            cardsContainer.innerHTML = cardsHtml;
+            cardsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    </script>
+</body>
+</html>
